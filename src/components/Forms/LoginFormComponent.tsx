@@ -1,15 +1,22 @@
 "use client"
-import React from "react";
+import React, {useState} from "react";
 import {Button, Card, Label} from "flowbite-react";
 import {Formik, ErrorMessage, Form, Field} from "formik";
 import * as yup from "yup";
 import {useSession, signIn, signOut} from "next-auth/react";
 import Image from "next/image";
 import { FaGoogle, FaGithub } from "react-icons/fa6";
+import {BASE_URL} from "@/lib/constants";
+
+type ValueTypes = {
+    email: string;
+    password: string;
+};
 
 export default function LoginComponent() {
 
     const {data: session} = useSession();
+    const [loading, setLoading] = useState(false);
 
     const validationSchema = yup.object({
         email: yup.string().required("email is required"),
@@ -17,6 +24,27 @@ export default function LoginComponent() {
             .required("password is required")
             .min(8, "password must be at least 8 characters"),
     });
+
+    //  handle submit
+    const handleSubmit = (values: ValueTypes) => {
+        setLoading(true);
+        fetch(`http://localhost:3000/api/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(values),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data);
+                setLoading(false);
+            })
+            .catch((error) => {
+                console.log(error);
+                setLoading(false);
+            });
+    };
 
     if (session) {
         return (
@@ -35,13 +63,14 @@ export default function LoginComponent() {
             </div>
         )
     }
+
     return (
         <>
             <Formik
                 validationSchema={validationSchema}
                 initialValues={{email: "", password: ""}}
-                onSubmit={values => {
-                    alert(values)
+                onSubmit={(values, actions) => {
+                    handleSubmit(values);
                 }}
             >
                 <div className="flex flex-col justify-center items-center">
@@ -67,10 +96,10 @@ export default function LoginComponent() {
                             </div>
                             <div>
                                 <div className="mb-2 block">
-                                    <Label htmlFor="password1" value="Your password"/>
+                                    <Label htmlFor="password" value="Your password"/>
                                 </div>
                                 <Field
-                                    id="password1"
+                                    id="password"
                                     name="password"
                                     type="password"
                                     placeholder="password"
